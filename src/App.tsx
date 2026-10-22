@@ -13,6 +13,7 @@ import {
   Copy,
   Heart,
   LayoutDashboard,
+  LockKeyhole,
   ListTodo,
   LoaderCircle,
   LogOut,
@@ -30,6 +31,7 @@ import { CATEGORIES, type Category, type Task, type TaskInput, type Workspace } 
 
 type Section = 'overview' | 'tasks' | 'budget' | 'settings'
 type TaskFilter = 'Offen' | 'Alle' | 'Erledigt'
+type AuthMode = 'password' | 'signup' | 'reset' | 'magic' | 'updatePassword'
 
 const money = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
 const longDate = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -69,7 +71,10 @@ function App() {
   const [notice, setNotice] = useState('')
   const [taskEditor, setTaskEditor] = useState<{ task?: Task; parentId?: string } | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
-  const [loginSent, setLoginSent] = useState(false)
+  const [loginPassword, setLoginPassword] = useState('')
+  const [authMode, setAuthMode] = useState<AuthMode>('password')
+  const [authNotice, setAuthNotice] = useState('')
+  const [authBusy, setAuthBusy] = useState(false)
   const [workspaceName, setWorkspaceName] = useState('Unsere Hochzeit')
   const [weddingDate, setWeddingDate] = useState('')
   const [inviteCode, setInviteCode] = useState(new URLSearchParams(window.location.search).get('invite') ?? '')
@@ -83,7 +88,10 @@ function App() {
 
     let active = true
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setUser(session?.user ? { id: session.user.id, email: session.user.email } : null)
+      if (active) {
+        if (_event === 'PASSWORD_RECOVERY') setAuthMode('updatePassword')
+        setUser(session?.user ? { id: session.user.id, email: session.user.email } : null)
+      }
     })
 
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
@@ -195,12 +203,77 @@ function App() {
     event.preventDefault()
     if (!supabase) return
     setError('')
-    const { error: loginError } = await supabase.auth.signInWithOtp({
+    setAuthNotice('')
+    setAuthBusy(true)
+    const { error: loginError } = await supabase.auth.signInWithPassword({
       email: loginEmail.trim(),
-      options: { emailRedirectTo: window.location.href },
+      password: loginPassword,
     })
     if (loginError) setError(loginError.message)
-    else setLoginSent(true)
+    setAuthBusy(false)
+  }
+
+  async function createAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+    setError('')
+    setAuthNotice('')
+    setAuthBusy(true)
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email: loginEmail.trim(),
+      password: loginPassword,
+      options: { emailRedirectTo: window.location.origin },
+    })
+    if (signupError) {
+      setError(signupError.message)
+    } else if (!data.session) {
+      setAuthNotice('Dein Konto wurde angelegt. Bitte bestätige einmalig den Link in deiner E-Mail und melde dich danach mit deinem Passwort an.')
+    }
+    setAuthBusy(false)
+  }
+
+  async function sendPasswordReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+    setError('')
+    setAuthNotice('')
+    setAuthBusy(true)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(loginEmail.trim(), {
+      redirectTo: window.location.origin,
+    })
+    if (resetError) setError(resetError.message)
+    else setAuthNotice(`Wir haben einen Link zum Festlegen deines Passworts an ${loginEmail.trim()} geschickt. Das musst du nur einmal machen.`)
+    setAuthBusy(false)
+  }
+
+  async function updatePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+    setError('')
+    setAuthBusy(true)
+    const { error: updateError } = await supabase.auth.updateUser({ password: loginPassword })
+    if (updateError) {
+      setError(updateError.message)
+    } else {
+      setLoginPassword('')
+      setAuthMode('password')
+    }
+    setAuthBusy(false)
+  }
+
+  async function sendMagicLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+    setError('')
+    setAuthNotice('')
+    setAuthBusy(true)
+    const { error: loginError } = await supabase.auth.signInWithOtp({
+      email: loginEmail.trim(),
+      options: { emailRedirectTo: window.location.origin },
+    })
+    if (loginError) setError(loginError.message)
+    else setAuthNotice(`Wir haben einen Anmeldelink an ${loginEmail.trim()} geschickt.`)
+    setAuthBusy(false)
   }
 
   async function signOut() {
@@ -331,32 +404,89 @@ function App() {
     return <LoadingScreen label="Eure Planung wird vorbereitet …" />
   }
 
+  if (authMode === 'updatePassword') {
+    return (
+      <main className="auth-page">
+        <section className="auth-card">
+          <BrandMark />
+          <p className="eyebrow">NUR NOCH EIN SCHRITT</p>
+          <h1>Passwort <em>festlegen.</em></h1>
+          <p className="auth-copy">Wähle ein Passwort. Danach könnt ihr euch auf diesem Gerät und dem iPhone deiner Verlobten ohne E-Mail-Link anmelden.</p>
+          <form className="auth-form" onSubmit={(event) => void updatePassword(event)}>
+            <label htmlFor="recovery-password">Neues Passwort</label>
+            <div className="input-with-icon"><LockKeyhole size={18} /><input id="recovery-password" type="password" autoComplete="new-password" minLength={8} placeholder="Mindestens 8 Zeichen" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} required /></div>
+            <button className="button button-primary button-wide" type="submit" disabled={authBusy}>{authBusy ? 'Wird gespeichert …' : 'Passwort speichern'} <ArrowRight size={17} /></button>
+          </form>
+          {error && <InlineMessage>{error}</InlineMessage>}
+        </section>
+      </main>
+    )
+  }
+
   if (!user) {
+    const isSignup = authMode === 'signup'
+    const isReset = authMode === 'reset'
+    const isMagic = authMode === 'magic'
+    const authHeading = isSignup
+      ? <>Konto <em>anlegen.</em></>
+      : isReset
+        ? <>Passwort <em>zurücksetzen.</em></>
+        : isMagic
+          ? <>Mit E-Mail-Link <em>anmelden.</em></>
+          : <>Für immer beginnt<br /><em>mit euch.</em></>
+
     return (
       <main className="auth-page">
         <div className="auth-decoration" aria-hidden="true"><span /><span /><span /></div>
         <section className="auth-card">
           <BrandMark />
           <p className="eyebrow">EURE GESCHICHTE, GEMEINSAM GEPLANT</p>
-          <h1>Für immer beginnt<br /><em>mit euch.</em></h1>
-          <p className="auth-copy">Ein liebevoller Ort für eure Ideen, To-dos und die Vorfreude auf euren großen Tag.</p>
-          {loginSent ? (
+          <h1>{authHeading}</h1>
+          <p className="auth-copy">{isSignup ? 'Erstellt euer gemeinsames Konto für eure Hochzeitsplanung.' : isReset ? 'Du musst dein Passwort nur einmal über einen Link aus deiner E-Mail festlegen.' : isMagic ? 'Wir schicken einen einmaligen Anmeldelink an deine E-Mail-Adresse.' : 'Ein liebevoller Ort für eure Ideen, To-dos und die Vorfreude auf euren großen Tag.'}</p>
+          {authNotice ? (
             <div className="mail-success">
               <span className="success-icon"><Mail size={21} /></span>
               <h2>Schau in dein Postfach</h2>
-              <p>Wir haben einen Anmeldelink an <strong>{loginEmail}</strong> geschickt. Öffne ihn auf diesem Gerät, um eure Planung zu starten.</p>
-              <button className="text-button" onClick={() => setLoginSent(false)}>Andere E-Mail verwenden</button>
+              <p>{authNotice}</p>
+              <button className="text-button" onClick={() => { setAuthNotice(''); setAuthMode('password') }}>Zurück zur Anmeldung</button>
             </div>
           ) : (
-            <form className="auth-form" onSubmit={(event) => void requestLogin(event)}>
-              <label htmlFor="login-email">Deine E-Mail-Adresse</label>
+            <form className="auth-form" onSubmit={(event) => {
+              if (isSignup) void createAccount(event)
+              else if (isReset) void sendPasswordReset(event)
+              else if (isMagic) void sendMagicLink(event)
+              else void requestLogin(event)
+            }}>
+              <label htmlFor="login-email">E-Mail-Adresse</label>
               <div className="input-with-icon"><Mail size={18} /><input id="login-email" type="email" autoComplete="email" placeholder="ihr@beispiel.de" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} required /></div>
-              <button className="button button-primary button-wide" type="submit">Anmeldelink senden <ArrowRight size={17} /></button>
-              <p className="form-footnote">Ohne Passwort. Der Link kommt direkt per E-Mail.</p>
+              {!isReset && !isMagic && (
+                <>
+                  <label htmlFor="login-password">{isSignup ? 'Passwort wählen' : 'Passwort'}</label>
+                  <div className="input-with-icon"><LockKeyhole size={18} /><input id="login-password" type="password" autoComplete={isSignup ? 'new-password' : 'current-password'} minLength={isSignup ? 8 : undefined} placeholder={isSignup ? 'Mindestens 8 Zeichen' : 'Dein Passwort'} value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} required /></div>
+                </>
+              )}
+              <button className="button button-primary button-wide" type="submit" disabled={authBusy}>
+                {authBusy ? 'Einen Moment …' : isSignup ? 'Konto anlegen' : isReset ? 'Passwort-Link senden' : isMagic ? 'Anmeldelink senden' : 'Anmelden'}
+                {!authBusy && <ArrowRight size={17} />}
+              </button>
+              {authMode === 'password' && <button className="auth-link auth-forgot" type="button" onClick={() => { setError(''); setAuthMode('reset') }}>Passwort vergessen?</button>}
+              <p className="form-footnote">{authMode === 'password' ? 'Einmal anmelden – auf diesem Gerät eingeloggt bleiben.' : isSignup ? 'Einmalige E-Mail-Bestätigung kann erforderlich sein.' : ''}</p>
             </form>
           )}
           <p className="privacy-note"><Heart size={13} fill="currentColor" /> Nur ihr beide habt Zugriff auf eure private Planung.</p>
           {error && <InlineMessage>{error}</InlineMessage>}
+          {!authNotice && (
+            <div className="auth-alternatives">
+              {authMode === 'password' ? (
+                <>
+                  <p>Noch kein Konto? <button className="auth-link" onClick={() => { setError(''); setAuthMode('signup') }}>Konto anlegen</button></p>
+                  <p><button className="auth-link" onClick={() => { setError(''); setAuthMode('magic') }}>Stattdessen mit E-Mail-Link anmelden</button></p>
+                </>
+              ) : (
+                <p><button className="auth-link" onClick={() => { setError(''); setAuthNotice(''); setAuthMode('password') }}>Zurück zur Passwort-Anmeldung</button></p>
+              )}
+            </div>
+          )}
         </section>
       </main>
     )

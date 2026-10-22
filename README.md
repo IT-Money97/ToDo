@@ -4,7 +4,8 @@ Eine installierbare, responsive Web-App für die gemeinsame Hochzeitsplanung auf
 
 ## Funktionen
 
-- Anmeldung per E-Mail-Link – kein Passwort erforderlich
+- Anmeldung per E-Mail und Passwort; Sitzung bleibt auf dem jeweiligen Gerät gespeichert
+- Passwort zurücksetzen per E-Mail-Link; optionaler Anmeldelink ohne Passwort
 - Privater Hochzeitsbereich mit Einladung per Link/Code
 - Ein gemeinsamer Hochzeitsbereich pro Konto, mit maximal zwei Mitgliedern
 - Aufgaben und beliebig verschachtelte Unteraufgaben mit Bereich, Notizen, Termin und Kosten
@@ -45,7 +46,9 @@ npm run dev
 2. Vercel erkennt Vite über [`vercel.json`](./vercel.json); Build-Befehl `npm run build`, Ausgabeordner `dist`.
 3. Hinterlege in Vercel unter **Project Settings → Environment Variables** `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` für **Production**, **Preview** und (falls gewünscht) **Development**.
 4. Deploye das Projekt. Trage danach die veröffentlichte `https://…vercel.app`-Adresse wie in Schritt 1 beschrieben in Supabase als **Site URL** und **Redirect URL** ein und deploye erneut.
-5. Öffne die Vercel-Adresse auf beiden iPhones, melde euch jeweils mit eurer E-Mail an. Eine Person erstellt die Planung und teilt den Link unter **Einstellungen**; die zweite Person öffnet den Link, meldet sich an und tritt mit dem vorausgefüllten Einladungscode bei.
+5. Öffne die Vercel-Adresse auf beiden iPhones und melde euch an. Verwendet ihr dieselbe E-Mail-Adresse, seid ihr auf beiden Geräten im selben Konto angemeldet; richtet das Passwort beim ersten Mal über **Passwort vergessen?** ein. Für getrennte Konten erstellt jede Person ein eigenes Konto; eine Person erstellt die Planung und teilt den Einladungslink unter **Einstellungen**, die zweite tritt dem Bereich bei.
+
+Nach erfolgreicher Anmeldung bleibt die Sitzung auf dem Gerät gespeichert. Bei einem neuen Gerät, gelöschten Browserdaten oder abgelaufener Sitzung muss man sich erneut anmelden. Ein gemeinsam genutztes Konto bedeutet, dass ihr in der App dieselbe Benutzeridentität teilt; für getrennte persönliche Konten nutzt eigene E-Mail-Adressen.
 
 **iPhone:** Link in Safari öffnen → Teilen → **Zum Home-Bildschirm**. Die App passt sich an iPhone- und iPad-Bildschirme an.
 

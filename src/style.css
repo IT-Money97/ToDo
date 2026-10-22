@@ -68,6 +68,11 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .mail-success p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
 .text-button { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--rose); background: transparent; cursor: pointer; font-size: 11px; font-weight: 700; }
 .mail-success .text-button { margin-top: 15px; }
+.auth-link { padding: 0; border: 0; color: var(--rose); background: transparent; cursor: pointer; font-size: 10px; font-weight: 700; }
+.auth-link:hover { color: var(--rose-deep); text-decoration: underline; }
+.auth-forgot { display: block; margin: 12px auto 0; }
+.auth-alternatives { display: grid; gap: 8px; margin-top: 18px; text-align: center; }
+.auth-alternatives p { margin: 0; color: #9d908a; font-size: 10px; }
 .inline-message { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 15px 0; padding: 12px 14px; border: 1px solid #ead5ce; border-radius: 9px; color: #824c45; background: #f9eeeb; font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
 .inline-success { border-color: #d9e5d7; color: #5e7659; background: #eef4eb; }
 .inline-message button { flex: 0 0 auto; padding: 0; border: 0; color: inherit; background: none; cursor: pointer; }
