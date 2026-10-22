@@ -66,6 +66,7 @@ function App() {
   const [section, setSection] = useState<Section>('overview')
   const [tasks, setTasks] = useState<Task[]>([])
   const [tasksLoading, setTasksLoading] = useState(false)
+  const [workspaceSaving, setWorkspaceSaving] = useState(false)
   const [syncStatus, setSyncStatus] = useState<'connecting' | 'online' | 'offline'>('connecting')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -380,14 +381,28 @@ function App() {
     event.preventDefault()
     if (!supabase || !workspace) return
     setError('')
-    const { data, error: updateError } = await supabase
-      .from('workspaces')
-      .update({ name: workspaceName.trim() || 'Gemeinsame To-dos', event_date: weddingDate || null })
-      .eq('id', workspace.id)
-      .select('id, name, invite_code, event_date, owner_id')
-      .single()
-    if (updateError) setError(updateError.message)
-    else setWorkspace(data as Workspace)
+    setNotice('')
+    setWorkspaceSaving(true)
+    try {
+      const { data, error: updateError } = await supabase
+        .from('workspaces')
+        .update({ name: workspaceName.trim() || 'Gemeinsame To-dos', event_date: weddingDate || null })
+        .eq('id', workspace.id)
+        .select('id, name, invite_code, event_date, owner_id')
+        .maybeSingle()
+      if (updateError) {
+        setError(updateError.message)
+      } else if (!data) {
+        setError('Die Änderungen wurden nicht gespeichert. Prüfe bitte deine Berechtigung und versuche es erneut.')
+      } else {
+        setWorkspace(data as Workspace)
+        setNotice('Änderungen gespeichert.')
+      }
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Die Änderungen konnten nicht gespeichert werden.')
+    } finally {
+      setWorkspaceSaving(false)
+    }
   }
 
   async function copyInvite() {
@@ -617,7 +632,7 @@ function App() {
                 <div className="section-heading"><div><p className="eyebrow">EUREN TAG</p><h2>Planungsdetails</h2></div><span className="settings-icon"><CalendarDays size={20} /></span></div>
                 <label htmlFor="settings-name">Name des Bereichs <span>optional</span></label><input id="settings-name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} maxLength={60} placeholder="Gemeinsame To-dos" />
                 <label htmlFor="settings-date">Wichtiges Datum <span>optional</span></label><input id="settings-date" type="date" value={weddingDate} onChange={(event) => setWeddingDate(event.target.value)} />
-                <button className="button button-primary" type="submit">Änderungen speichern <Check size={16} /></button>
+                <button className="button button-primary" type="submit" disabled={workspaceSaving}>{workspaceSaving ? 'Wird gespeichert …' : 'Änderungen speichern'} {!workspaceSaving && <Check size={16} />}</button>
               </form>
               <section className="section-card invite-card"><div><p className="eyebrow">ZUSAMMEN PLANEN</p><h2>Teilt eure To-dos</h2><p>Teile den privaten Einladungslink mit der Person, mit der du gemeinsam planen möchtest.</p></div><div className="invite-code-row"><div><span>EUER EINLADUNGSCODE</span><strong>{workspace.invite_code}</strong></div><button className="button button-soft" onClick={() => void copyInvite()}><Copy size={16} /> Einladungslink kopieren</button></div></section>
               <section className="section-card privacy-card"><span><Heart size={18} /></span><div><strong>Privat und gemeinsam</strong><p>Eure Aufgaben und Kosten sehen nur die angemeldeten Mitglieder dieses Bereichs.</p></div></section>
