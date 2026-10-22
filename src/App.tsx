@@ -284,26 +284,30 @@ function App() {
 
   async function createWorkspace(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!supabase || !workspaceName.trim()) return
+    if (!supabase) return
     setError('')
     setWorkspacesLoading(true)
-    const { data, error: createError } = await supabase.rpc('create_wedding_workspace', {
-      workspace_name: workspaceName.trim() || 'Gemeinsame To-dos',
-      wedding_date: weddingDate || null,
-    })
-    if (createError) {
-      setError(createError.message)
+    try {
+      const { data, error: createError } = await supabase.rpc('create_wedding_workspace', {
+        workspace_name: workspaceName.trim() || 'Gemeinsame To-dos',
+        wedding_date: weddingDate || null,
+      })
+      if (createError) {
+        setError(createError.message)
+        return
+      }
+      const { data: created, error: readError } = await supabase
+        .from('workspaces')
+        .select('id, name, invite_code, event_date, owner_id')
+        .eq('id', data)
+        .single()
+      if (readError) setError(readError.message)
+      else setWorkspace(created as Workspace)
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : 'Der gemeinsame Bereich konnte nicht erstellt werden.')
+    } finally {
       setWorkspacesLoading(false)
-      return
     }
-    const { data: created, error: readError } = await supabase
-      .from('workspaces')
-      .select('id, name, invite_code, event_date, owner_id')
-      .eq('id', data)
-      .single()
-    if (readError) setError(readError.message)
-    else setWorkspace(created as Workspace)
-    setWorkspacesLoading(false)
   }
 
   async function joinWorkspace(event: FormEvent<HTMLFormElement>) {
