@@ -1,7 +1,7 @@
 {
-  "name": "Für immer – Unsere Hochzeitsplanung",
-  "short_name": "Für immer",
-  "description": "Gemeinsam eure Hochzeit planen.",
+  "name": "Zusammen – Gemeinsame To-dos",
+  "short_name": "Zusammen",
+  "description": "Eure gemeinsamen To-dos – einfach organisiert, an einem Ort.",
   "lang": "de-DE",
   "start_url": "/",
   "display": "standalone",

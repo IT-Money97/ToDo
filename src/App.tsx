@@ -75,7 +75,7 @@ function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('password')
   const [authNotice, setAuthNotice] = useState('')
   const [authBusy, setAuthBusy] = useState(false)
-  const [workspaceName, setWorkspaceName] = useState('Unsere Hochzeit')
+  const [workspaceName, setWorkspaceName] = useState('')
   const [weddingDate, setWeddingDate] = useState('')
   const [inviteCode, setInviteCode] = useState(new URLSearchParams(window.location.search).get('invite') ?? '')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -288,7 +288,7 @@ function App() {
     setError('')
     setWorkspacesLoading(true)
     const { data, error: createError } = await supabase.rpc('create_wedding_workspace', {
-      workspace_name: workspaceName.trim(),
+      workspace_name: workspaceName.trim() || 'Gemeinsame To-dos',
       wedding_date: weddingDate || null,
     })
     if (createError) {
@@ -374,11 +374,11 @@ function App() {
 
   async function saveWorkspace(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!supabase || !workspace || !workspaceName.trim()) return
+    if (!supabase || !workspace) return
     setError('')
     const { data, error: updateError } = await supabase
       .from('workspaces')
-      .update({ name: workspaceName.trim(), event_date: weddingDate || null })
+      .update({ name: workspaceName.trim() || 'Gemeinsame To-dos', event_date: weddingDate || null })
       .eq('id', workspace.id)
       .select('id, name, invite_code, event_date, owner_id')
       .single()
@@ -401,7 +401,7 @@ function App() {
   if (!hasSupabaseConfig) return <SetupScreen />
 
   if (authLoading) {
-    return <LoadingScreen label="Eure Planung wird vorbereitet …" />
+    return <LoadingScreen label="Eure To-dos werden vorbereitet …" />
   }
 
   if (authMode === 'updatePassword') {
@@ -411,7 +411,7 @@ function App() {
           <BrandMark />
           <p className="eyebrow">NUR NOCH EIN SCHRITT</p>
           <h1>Passwort <em>festlegen.</em></h1>
-          <p className="auth-copy">Wähle ein Passwort. Danach könnt ihr euch auf diesem Gerät und dem iPhone deiner Verlobten ohne E-Mail-Link anmelden.</p>
+          <p className="auth-copy">Wähle ein Passwort. Danach könnt ihr euch auf euren Geräten ohne E-Mail-Link anmelden.</p>
           <form className="auth-form" onSubmit={(event) => void updatePassword(event)}>
             <label htmlFor="recovery-password">Neues Passwort</label>
             <div className="input-with-icon"><LockKeyhole size={18} /><input id="recovery-password" type="password" autoComplete="new-password" minLength={8} placeholder="Mindestens 8 Zeichen" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} required /></div>
@@ -433,16 +433,16 @@ function App() {
         ? <>Passwort <em>zurücksetzen.</em></>
         : isMagic
           ? <>Mit E-Mail-Link <em>anmelden.</em></>
-          : <>Für immer beginnt<br /><em>mit euch.</em></>
+          : <>Eure To-dos,<br /><em>gemeinsam im Blick.</em></>
 
     return (
       <main className="auth-page">
         <div className="auth-decoration" aria-hidden="true"><span /><span /><span /></div>
         <section className="auth-card">
           <BrandMark />
-          <p className="eyebrow">EURE GESCHICHTE, GEMEINSAM GEPLANT</p>
+          <p className="eyebrow">EINFACH GEMEINSAM ORGANISIERT</p>
           <h1>{authHeading}</h1>
-          <p className="auth-copy">{isSignup ? 'Erstellt euer gemeinsames Konto für eure Hochzeitsplanung.' : isReset ? 'Du musst dein Passwort nur einmal über einen Link aus deiner E-Mail festlegen.' : isMagic ? 'Wir schicken einen einmaligen Anmeldelink an deine E-Mail-Adresse.' : 'Ein liebevoller Ort für eure Ideen, To-dos und die Vorfreude auf euren großen Tag.'}</p>
+          <p className="auth-copy">{isSignup ? 'Erstellt euer gemeinsames Konto für eure Aufgaben und Pläne.' : isReset ? 'Du musst dein Passwort nur einmal über einen Link aus deiner E-Mail festlegen.' : isMagic ? 'Wir schicken einen einmaligen Anmeldelink an deine E-Mail-Adresse.' : 'Aufgaben gemeinsam sammeln, Termine im Blick behalten und Erledigtes abhaken.'}</p>
           {authNotice ? (
             <div className="mail-success">
               <span className="success-icon"><Mail size={21} /></span>
@@ -473,7 +473,7 @@ function App() {
               <p className="form-footnote">{authMode === 'password' ? 'Einmal anmelden – auf diesem Gerät eingeloggt bleiben.' : isSignup ? 'Einmalige E-Mail-Bestätigung kann erforderlich sein.' : ''}</p>
             </form>
           )}
-          <p className="privacy-note"><Heart size={13} fill="currentColor" /> Nur ihr beide habt Zugriff auf eure private Planung.</p>
+          <p className="privacy-note"><Heart size={13} fill="currentColor" /> Euer gemeinsamer Bereich bleibt privat.</p>
           {error && <InlineMessage>{error}</InlineMessage>}
           {!authNotice && (
             <div className="auth-alternatives">
@@ -492,29 +492,33 @@ function App() {
     )
   }
 
-  if (workspacesLoading && !workspace) return <LoadingScreen label="Euer Hochzeitsbereich wird geladen …" />
+  if (workspacesLoading && !workspace) return <LoadingScreen label="Eure To-dos werden geladen …" />
 
   if (!workspace) {
     return (
       <main className="setup-page">
         <section className="setup-card">
           <BrandMark />
-          <p className="eyebrow">ZUSAMMEN IST ALLES SCHÖNER</p>
-          <h1>Euer gemeinsamer<br /><em>Hochzeitsbereich.</em></h1>
-          <p className="auth-copy">Erstellt eure Planung oder tretet mit dem persönlichen Einladungscode bei.</p>
+          <p className="eyebrow">EINFACH GEMEINSAM ORGANISIERT</p>
+          <h1>Eure To-dos,<br /><em>an einem Ort.</em></h1>
+          <p className="auth-copy">Erstellt einen privaten Bereich und legt direkt los. Name und Datum könnt ihr hinzufügen, müsst ihr aber nicht.</p>
           <form className="setup-form" onSubmit={(event) => void createWorkspace(event)}>
-            <h2><Sparkles size={18} /> Neue Planung starten</h2>
-            <label htmlFor="workspace-name">Name eurer Planung</label>
-            <input id="workspace-name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} maxLength={60} required />
-            <label htmlFor="wedding-date">Hochzeitsdatum <span>optional</span></label>
-            <input id="wedding-date" type="date" value={weddingDate} onChange={(event) => setWeddingDate(event.target.value)} />
-            <button className="button button-primary button-wide" disabled={workspacesLoading}>Planung erstellen <ArrowRight size={17} /></button>
+            <button className="button button-primary button-wide" disabled={workspacesLoading}>{workspacesLoading ? 'Wird erstellt …' : 'Gemeinsame To-dos starten'} {!workspacesLoading && <ArrowRight size={17} />}</button>
+            <details className="optional-setup">
+              <summary>Name oder Datum hinzufügen <span>optional</span></summary>
+              <label htmlFor="workspace-name">Name des Bereichs</label>
+              <input id="workspace-name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} maxLength={60} placeholder="Gemeinsame To-dos" />
+              <label htmlFor="wedding-date">Wichtiges Datum</label>
+              <input id="wedding-date" type="date" value={weddingDate} onChange={(event) => setWeddingDate(event.target.value)} />
+            </details>
           </form>
-          <div className="or-divider"><span>oder</span></div>
-          <form className="join-form" onSubmit={(event) => void joinWorkspace(event)}>
-            <label htmlFor="invite-code">Mit Einladungscode beitreten</label>
-            <div className="join-row"><input id="invite-code" placeholder="Zum Beispiel A1B2C3D4" value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase())} required /><button className="button button-soft" disabled={workspacesLoading}>Beitreten</button></div>
-          </form>
+          <details className="join-details">
+            <summary>Du hast schon einen Einladungscode?</summary>
+            <form className="join-form" onSubmit={(event) => void joinWorkspace(event)}>
+              <label htmlFor="invite-code">Einladungscode</label>
+              <div className="join-row"><input id="invite-code" placeholder="Code eingeben" value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase())} required /><button className="button button-soft" disabled={workspacesLoading}>Beitreten</button></div>
+            </form>
+          </details>
           {error && <InlineMessage>{error}</InlineMessage>}
           <button className="text-button setup-signout" onClick={() => void signOut()}><LogOut size={14} /> Abmelden</button>
         </section>
@@ -532,9 +536,9 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-brand"><BrandMark compact /><span>für immer<small>UNSERE HOCHZEIT</small></span></div>
+        <div className="sidebar-brand"><BrandMark compact /><span>zusammen<small>GEMEINSAM ORGANISIERT</small></span></div>
         <div className="workspace-pill"><span className="workspace-dot" />{workspace.name}<ChevronDown size={14} /></div>
-        <p className="nav-label">EURE PLANUNG</p>
+        <p className="nav-label">EURE TO-DOS</p>
         <nav className="main-nav" aria-label="Hauptnavigation">
           <NavButton section="overview" active={section} onClick={setSection} icon={<LayoutDashboard size={18} />}>Übersicht</NavButton>
           <NavButton section="tasks" active={section} onClick={setSection} icon={<ListTodo size={18} />}>Alle Aufgaben<span className="nav-count">{tasks.filter((task) => !task.completed).length}</span></NavButton>
@@ -565,16 +569,16 @@ function App() {
           {section === 'overview' && (
             <>
               <div className="page-heading">
-                <div><p className="eyebrow">{greeting()} – SCHÖN, DASS IHR DA SEID</p><h1>Gemeinsam wird’s <em>wunderschön.</em></h1><p>Ein liebevoll geplanter Tag beginnt mit kleinen Schritten.</p></div>
+                <div><p className="eyebrow">{greeting()} – SCHÖN, DASS IHR DA SEID</p><h1>Gemeinsam den <em>Überblick behalten.</em></h1><p>Aufgaben sammeln, Termine planen und Schritt für Schritt erledigen.</p></div>
                 <button className="button button-primary heading-action" onClick={() => setTaskEditor({})}><Plus size={17} /> Aufgabe hinzufügen</button>
               </div>
               <section className="hero-card">
-                <div className="hero-copy"><span className="hero-kicker"><Sparkles size={14} /> EUER GROSSER TAG</span><h2>{dueDays === null ? 'Ein Tag voller Liebe wartet auf euch.' : dueDays < 0 ? 'Euer großer Tag war wunderschön.' : dueDays === 0 ? 'Heute ist euer großer Tag!' : `Noch ${dueDays} ${dueDays === 1 ? 'Tag' : 'Tage'} bis zu eurem Ja.`}</h2><p>{workspace.event_date ? formatDate(workspace.event_date) : 'Tragt euer Hochzeitsdatum in den Einstellungen ein.'}</p></div>
+                <div className="hero-copy"><span className="hero-kicker"><Sparkles size={14} /> GEMEINSAMER ÜBERBLICK</span><h2>{dueDays === null ? 'Alles Wichtige im Blick.' : dueDays < 0 ? 'Euer Termin liegt hinter euch.' : dueDays === 0 ? 'Heute ist euer wichtiger Tag!' : `Noch ${dueDays} ${dueDays === 1 ? 'Tag' : 'Tage'} bis zu eurem Termin.`}</h2><p>{workspace.event_date ? formatDate(workspace.event_date) : 'Eure To-dos, Termine und Kosten an einem Ort.'}</p></div>
                 <div className="hero-flower" aria-hidden="true"><span className="flower-center" /><i /><i /><i /><i /><i /><i /></div>
-                <div className="hero-progress"><div className="progress-label"><span>Auf dem Weg zu eurem Tag</span><strong>{progress}%</strong></div><div className="progress-track"><span style={{ width: `${progress}%` }} /></div><small>{completedCount} von {tasks.length} Aufgaben geschafft</small></div>
+                <div className="hero-progress"><div className="progress-label"><span>Fortschritt bei euren Aufgaben</span><strong>{progress}%</strong></div><div className="progress-track"><span style={{ width: `${progress}%` }} /></div><small>{completedCount} von {tasks.length} Aufgaben erledigt</small></div>
               </section>
               <div className="stats-grid">
-                <StatCard icon={<ListTodo size={18} />} label="Noch offen" value={String(tasks.filter((task) => !task.completed).length)} detail="kleine Schritte bis zum Ja" tone="rose" />
+                <StatCard icon={<ListTodo size={18} />} label="Noch offen" value={String(tasks.filter((task) => !task.completed).length)} detail="Aufgaben, die noch anstehen" tone="rose" />
                 <StatCard icon={<Wallet size={18} />} label="Geplantes Budget" value={money.format(plannedBudget)} detail={`${money.format(paidBudget)} bereits bezahlt`} tone="sage" />
                 <StatCard icon={<CalendarDays size={18} />} label="Nächster Termin" value={upcomingTasks[0]?.due_date ? shortDate.format(new Date(`${upcomingTasks[0].due_date}T12:00:00`)) : 'Noch offen'} detail={upcomingTasks[0]?.title ?? 'Datum bei einer Aufgabe ergänzen'} tone="sand" />
               </div>
@@ -582,7 +586,7 @@ function App() {
                 <div className="section-heading"><div><p className="eyebrow">EURE NÄCHSTEN SCHRITTE</p><h2>Was steht bald an?</h2></div><button className="text-button" onClick={() => setSection('tasks')}>Alle Aufgaben <ArrowRight size={15} /></button></div>
                 {tasksLoading ? <LoadingInline /> : upcomingTasks.length ? <div className="upcoming-list">{upcomingTasks.map((task) => <div className="upcoming-item" key={task.id}><button className="check-button" aria-label={`„${task.title}“ abhaken`} onClick={() => void toggleTask(task)}><Circle size={20} /></button><div className="upcoming-main"><strong>{task.title}</strong><span>{task.category}{task.parent_id ? ' · Unteraufgabe' : ''}</span></div><span className="upcoming-date"><CalendarDays size={14} />{formatDate(task.due_date)}</span><button className="row-arrow" aria-label="Aufgabe bearbeiten" onClick={() => setTaskEditor({ task })}><ArrowRight size={16} /></button></div>)}</div> : <EmptyState title="Hier ist noch Platz für eure Pläne" copy="Fügt eine Aufgabe mit Datum hinzu – sie erscheint dann hier." action={() => setTaskEditor({})} />}
               </section>
-              <div className="quote-card"><span className="quote-heart"><Heart size={20} /></span><p>„Die schönsten Dinge im Leben sind nicht Dinge – sondern gemeinsame Momente.“</p><span>FÜR EURE GEMEINSAME GESCHICHTE</span></div>
+              <div className="quote-card"><span className="quote-heart"><CheckCircle2 size={20} /></span><p>Ein Schritt nach dem anderen – gemeinsam behaltet ihr alles im Blick.</p><span>GUT GEMACHT, IHR ZWEI</span></div>
             </>
           )}
 
@@ -604,18 +608,18 @@ function App() {
 
           {section === 'settings' && (
             <section className="settings-page">
-              <div className="page-heading"><div><p className="eyebrow">ALLES AN EINEM ORT</p><h1>Eure <em>Einstellungen.</em></h1><p>Haltet euren gemeinsamen Bereich so, wie er zu euch passt.</p></div></div>
+              <div className="page-heading"><div><p className="eyebrow">ALLES AN EINEM ORT</p><h1>Eure <em>Einstellungen.</em></h1><p>Name und wichtiges Datum könnt ihr festlegen – beides ist optional.</p></div></div>
               <form className="section-card settings-form" onSubmit={(event) => void saveWorkspace(event)}>
                 <div className="section-heading"><div><p className="eyebrow">EUREN TAG</p><h2>Planungsdetails</h2></div><span className="settings-icon"><CalendarDays size={20} /></span></div>
-                <label htmlFor="settings-name">Name eurer Planung</label><input id="settings-name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} maxLength={60} required />
-                <label htmlFor="settings-date">Hochzeitsdatum</label><input id="settings-date" type="date" value={weddingDate} onChange={(event) => setWeddingDate(event.target.value)} />
+                <label htmlFor="settings-name">Name des Bereichs <span>optional</span></label><input id="settings-name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} maxLength={60} placeholder="Gemeinsame To-dos" />
+                <label htmlFor="settings-date">Wichtiges Datum <span>optional</span></label><input id="settings-date" type="date" value={weddingDate} onChange={(event) => setWeddingDate(event.target.value)} />
                 <button className="button button-primary" type="submit">Änderungen speichern <Check size={16} /></button>
               </form>
-              <section className="section-card invite-card"><div><p className="eyebrow">ZUSAMMEN PLANEN</p><h2>Teilt eure Planung</h2><p>Lade deine Verlobte mit diesem privaten Link ein. Sie meldet sich mit ihrer E-Mail an und sieht sofort eure gemeinsamen Aufgaben.</p></div><div className="invite-code-row"><div><span>EUER EINLADUNGSCODE</span><strong>{workspace.invite_code}</strong></div><button className="button button-soft" onClick={() => void copyInvite()}><Copy size={16} /> Einladungslink kopieren</button></div></section>
-              <section className="section-card privacy-card"><span><Heart size={18} /></span><div><strong>Nur für euch zwei</strong><p>Alle Aufgaben und Kosten sind privat und nur für angemeldete Mitglieder dieses Hochzeitsbereichs sichtbar.</p></div></section>
+              <section className="section-card invite-card"><div><p className="eyebrow">ZUSAMMEN PLANEN</p><h2>Teilt eure To-dos</h2><p>Teile den privaten Einladungslink mit der Person, mit der du gemeinsam planen möchtest.</p></div><div className="invite-code-row"><div><span>EUER EINLADUNGSCODE</span><strong>{workspace.invite_code}</strong></div><button className="button button-soft" onClick={() => void copyInvite()}><Copy size={16} /> Einladungslink kopieren</button></div></section>
+              <section className="section-card privacy-card"><span><Heart size={18} /></span><div><strong>Privat und gemeinsam</strong><p>Eure Aufgaben und Kosten sehen nur die angemeldeten Mitglieder dieses Bereichs.</p></div></section>
             </section>
           )}
-          <footer className="app-footer"><span>Mit Liebe für euren großen Tag gemacht</span><Heart size={13} /></footer>
+          <footer className="app-footer">          <span>Zusammen den Überblick behalten</span><Heart size={13} /></footer>
         </div>
       </main>
 
@@ -639,9 +643,9 @@ function SetupScreen() {
       <section className="setup-card config-card">
         <BrandMark />
         <p className="eyebrow">FAST BEREIT FÜR EURE GESCHICHTE</p>
-        <h1>Ein Zuhause für<br /><em>eure Hochzeitsplanung.</em></h1>
-        <p className="auth-copy">Die App ist vorbereitet. Für gemeinsame Anmeldung und Live-Synchronisierung muss noch euer Supabase-Projekt verbunden werden.</p>
-        <div className="config-checklist"><div><CheckCircle2 size={19} /><span>iPhone-optimierte, installierbare App</span></div><div><CheckCircle2 size={19} /><span>Private gemeinsame Planung mit Einladungscode</span></div><div><CheckCircle2 size={19} /><span>Aufgaben, Unteraufgaben, Termine und Budget</span></div></div>
+        <h1>Eure To-dos,<br /><em>an einem Ort.</em></h1>
+        <p className="auth-copy">Für Anmeldung und gemeinsame Live-Synchronisierung muss noch euer Supabase-Projekt verbunden werden.</p>
+        <div className="config-checklist"><div><CheckCircle2 size={19} /><span>iPhone-optimierte, installierbare App</span></div><div><CheckCircle2 size={19} /><span>Private gemeinsame To-dos per Einladung</span></div><div><CheckCircle2 size={19} /><span>Aufgaben, Unteraufgaben, Termine und Kosten</span></div></div>
         <p className="config-help">Folge der Anleitung in <strong>README.md</strong>, um Supabase zu verbinden und die App anschließend über Vercel online zu stellen.</p>
       </section>
     </main>
@@ -657,7 +661,7 @@ function LoadingInline() {
 }
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
-  return <div className={`brand-mark${compact ? ' brand-mark-small' : ''}`}><Heart size={compact ? 17 : 22} fill="currentColor" /><span>für immer</span></div>
+  return <div className={`brand-mark${compact ? ' brand-mark-small' : ''}`}><Heart size={compact ? 17 : 22} fill="currentColor" /><span>zusammen</span></div>
 }
 
 function InlineMessage({ children, onClose, success = false }: { children: ReactNode; onClose?: () => void; success?: boolean }) {
@@ -840,7 +844,7 @@ function TaskEditor({ task, parent, onClose, onSave, onDelete }: {
         <div className="modal-heading"><div><span className="modal-icon"><Sparkles size={18} /></span><div><p className="eyebrow">{parent ? 'KLEINE SCHRITTE HELFEN' : 'EURE HOCHZEITSPLANUNG'}</p><h2 id="task-modal-title">{task ? 'Aufgabe bearbeiten' : parent ? 'Unteraufgabe anlegen' : 'Neue Aufgabe'}</h2></div></div><button className="icon-button" aria-label="Schließen" onClick={onClose}><X size={19} /></button></div>
         {parent && <div className="parent-context"><ArrowDownRight size={16} /> Unteraufgabe für <strong>{parent.title}</strong></div>}
         <form className="task-form" onSubmit={(event) => void submit(event)}>
-          <label htmlFor="task-title">Was möchtet ihr erledigen? <span>*</span></label><input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="z. B. Location für den Henna-Abend finden" autoFocus required />
+          <label htmlFor="task-title">Was möchtet ihr erledigen? <span>*</span></label><input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="z. B. Einkauf planen" autoFocus required />
           <label htmlFor="task-notes">Notizen <span className="optional">optional</span></label><textarea id="task-notes" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} maxLength={1000} placeholder="Details, Ansprechpartner, Ideen …" />
           <div className="form-grid"><div><label htmlFor="task-category">Bereich</label><select id="task-category" value={category} onChange={(event) => setCategory(event.target.value as Category)}>{CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></div><div><label htmlFor="task-date">Termin</label><input id="task-date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div></div>
           <label htmlFor="task-cost">Geplante Kosten <span className="optional">optional</span></label><div className="cost-input"><input id="task-cost" type="number" min="0" step="0.01" value={cost} onChange={(event) => setCost(event.target.value)} placeholder="0,00" /><span>EUR</span></div>
